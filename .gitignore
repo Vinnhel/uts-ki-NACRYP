@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+*.enc
+sample_files/
+hasil_pengujian.xlsx
+.streamlit/secrets.toml
+.DS_Store
