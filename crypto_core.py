@@ -7,31 +7,46 @@ Format blob terenkripsi (disimpan sebagai satu berkas .enc):
     [1 byte algo_id] [16 byte salt] [12 byte nonce] [ciphertext+tag ...]
 
 algo_id:
-    0x01 = AES-256-GCM
-    0x02 = ChaCha20-Poly1305
+    0x01 = AES-256-GCM        (Anggota 1 — SELESAI)
+    0x02 = ChaCha20-Poly1305  (Anggota 2 — TODO)
 
 Semua nilai acak (salt, nonce) WAJIB dibangkitkan dengan `secrets` /
 `os.urandom`. Key tidak pernah disimpan di disk maupun di source code.
-
-TODO (Hari 2-3): implementasikan tiap fungsi di bawah sesuai docstring.
-TODO (Hari 4): tambahkan dukungan ChaCha20-Poly1305 sebagai mode kedua.
 """
 
 import secrets
 
+from argon2.low_level import hash_secret_raw, Type
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 # --- Konstanta ---
-SALT_SIZE = 16          # byte, untuk key derivation
+SALT_SIZE = 16           # byte, untuk key derivation
 NONCE_SIZE = 12          # byte, standar untuk GCM & ChaCha20-Poly1305
 KEY_SIZE = 32            # byte, AES-256 / ChaCha20 key = 256 bit
 
 ALGO_AES_GCM = 0x01
 ALGO_CHACHA20_POLY1305 = 0x02
 
+# Parameter Argon2id — cukup kuat untuk tugas ini, tidak terlalu lambat
+# untuk didemokan (waktu derive key sekitar puluhan-ratusan ms).
+_ARGON2_TIME_COST = 3
+_ARGON2_MEMORY_COST = 64 * 1024   # 64 MB
+_ARGON2_PARALLELISM = 2
+
+
+class DecryptionError(Exception):
+    """Dilempar saat dekripsi gagal: password salah atau data telah diubah.
+
+    Pesan sengaja generik (tidak membedakan "password salah" vs
+    "ciphertext diubah") untuk menghindari oracle attack.
+    """
+    pass
+
 
 def derive_key(password: str, salt: bytes) -> bytes:
     """
-    Menurunkan kunci 256-bit dari password menggunakan Argon2id (disarankan)
-    atau Scrypt sebagai alternatif.
+    Menurunkan kunci 256-bit dari password menggunakan Argon2id.
 
     Args:
         password: password/kata sandi dari pengguna (plaintext, str).
@@ -39,15 +54,20 @@ def derive_key(password: str, salt: bytes) -> bytes:
 
     Returns:
         bytes sepanjang KEY_SIZE (32 byte) sebagai kunci simetris.
-
-    Catatan implementasi:
-        - Gunakan argon2.low_level.hash_secret_raw (argon2-cffi) dengan
-          parameter time_cost, memory_cost, parallelism yang wajar
-          (mis. time_cost=3, memory_cost=64*1024, parallelism=2), ATAU
-        - Gunakan cryptography.hazmat.primitives.kdf.scrypt.Scrypt.
-        - JANGAN pakai MD5/SHA-1 untuk key derivation.
     """
-    raise NotImplementedError("TODO Hari 2: implementasikan derive_key")
+    if len(salt) != SALT_SIZE:
+        raise ValueError(f"Salt harus {SALT_SIZE} byte, diterima {len(salt)} byte")
+
+    key = hash_secret_raw(
+        secret=password.encode("utf-8"),
+        salt=salt,
+        time_cost=_ARGON2_TIME_COST,
+        memory_cost=_ARGON2_MEMORY_COST,
+        parallelism=_ARGON2_PARALLELISM,
+        hash_len=KEY_SIZE,
+        type=Type.ID,  # Argon2id — kombinasi tahan side-channel & GPU-crack
+    )
+    return key
 
 
 def encrypt(plaintext: bytes, password: str, algo: int = ALGO_AES_GCM) -> bytes:
@@ -57,21 +77,26 @@ def encrypt(plaintext: bytes, password: str, algo: int = ALGO_AES_GCM) -> bytes:
     Args:
         plaintext: data mentah (bytes) yang akan dienkripsi.
         password: password dari pengguna.
-        algo: ALGO_AES_GCM atau ALGO_CHACHA20_POLY1305.
+        algo: ALGO_AES_GCM (ChaCha20 akan ditambahkan Anggota 2).
 
     Returns:
-        blob bytes dengan format:
-        [1 byte algo_id][salt][nonce][ciphertext+tag]
-
-    Langkah:
-        1. Bangkitkan salt acak (SALT_SIZE byte) -> secrets.token_bytes.
-        2. key = derive_key(password, salt).
-        3. Bangkitkan nonce acak (NONCE_SIZE byte).
-        4. Enkripsi plaintext dengan AESGCM(key) atau ChaCha20Poly1305(key),
-           pakai nonce di atas -> hasil sudah termasuk auth tag di akhir.
-        5. Gabungkan: bytes([algo]) + salt + nonce + ciphertext.
+        blob bytes: [1 byte algo_id][salt][nonce][ciphertext+tag]
     """
-    raise NotImplementedError("TODO Hari 2: implementasikan encrypt")
+    if algo != ALGO_AES_GCM:
+        raise NotImplementedError(
+            "Mode selain AES-GCM belum diimplementasikan (TODO Anggota 2)"
+        )
+
+    salt = secrets.token_bytes(SALT_SIZE)
+    key = derive_key(password, salt)
+    nonce = secrets.token_bytes(NONCE_SIZE)
+
+    cipher = AESGCM(key)
+    # associated_data=None -> tidak ada data tambahan yang diautentikasi.
+    ciphertext = cipher.encrypt(nonce, plaintext, None)
+
+    blob = bytes([algo]) + salt + nonce + ciphertext
+    return blob
 
 
 def decrypt(blob: bytes, password: str) -> bytes:
@@ -86,22 +111,33 @@ def decrypt(blob: bytes, password: str) -> bytes:
         plaintext asli (bytes) jika password benar dan blob tidak diubah.
 
     Raises:
-        InvalidTag (dari `cryptography`) atau ValueError kustom apabila:
-            - password salah, ATAU
-            - blob/ciphertext telah diubah (auth tag tidak cocok).
-        Fungsi pemanggil (app.py) WAJIB menangkap exception ini dan
-        menampilkan pesan "Password salah atau berkas telah diubah."
-        JANGAN membedakan pesan error antara "password salah" vs
-        "ciphertext diubah" ke pengguna akhir (hindari oracle attack).
-
-    Langkah:
-        1. Parse blob: algo_id = blob[0], salt = blob[1:17],
-           nonce = blob[17:29], ciphertext = blob[29:].
-        2. key = derive_key(password, salt).
-        3. Decrypt sesuai algo_id; library akan otomatis memverifikasi
-           auth tag dan melempar exception jika gagal.
+        DecryptionError: jika password salah ATAU blob/ciphertext telah
+        diubah. Pesan sengaja tidak dibedakan (lihat docstring kelas).
     """
-    raise NotImplementedError("TODO Hari 2: implementasikan decrypt")
+    min_len = 1 + SALT_SIZE + NONCE_SIZE
+    if len(blob) < min_len:
+        raise DecryptionError("Berkas tidak valid atau rusak.")
+
+    algo = blob[0]
+    salt = blob[1:1 + SALT_SIZE]
+    nonce = blob[1 + SALT_SIZE:1 + SALT_SIZE + NONCE_SIZE]
+    ciphertext = blob[1 + SALT_SIZE + NONCE_SIZE:]
+
+    if algo != ALGO_AES_GCM:
+        raise NotImplementedError(
+            "Mode selain AES-GCM belum diimplementasikan (TODO Anggota 2)"
+        )
+
+    key = derive_key(password, salt)
+    cipher = AESGCM(key)
+
+    try:
+        plaintext = cipher.decrypt(nonce, ciphertext, None)
+    except InvalidTag:
+        # Password salah ATAU ciphertext diubah -> pesan generik.
+        raise DecryptionError("Password salah atau berkas telah diubah.")
+
+    return plaintext
 
 
 def bit_diff_percentage(data_a: bytes, data_b: bytes) -> float:
@@ -118,4 +154,4 @@ def bit_diff_percentage(data_a: bytes, data_b: bytes) -> float:
     Dipakai di benchmark.py Hari 5 untuk membandingkan ciphertext saat
     1 bit plaintext/key diubah.
     """
-    raise NotImplementedError("TODO Hari 5: implementasikan bit_diff_percentage")
+    raise NotImplementedError("TODO Anggota 3: implementasikan bit_diff_percentage")
