@@ -3,9 +3,8 @@ Unit test untuk crypto_core.py.
 Minimal 5 test sesuai ketentuan tugas (Bagian 4).
 Jalankan dari root folder project: pytest tests/ -v
 
-Tahap 1 (Anggota 1): test untuk derive_key() dan AES-256-GCM.
-Test untuk ChaCha20 (Anggota 2) dan avalanche effect (Anggota 3)
-akan ditambahkan menyusul.
+Tahap 2 (Anggota 2): menambahkan test untuk ChaCha20-Poly1305
+dan kasus tepi (edge case), melanjutkan test dari Anggota 1.
 """
 
 import sys
@@ -20,10 +19,13 @@ from crypto_core import (
     derive_key,
     DecryptionError,
     ALGO_AES_GCM,
+    ALGO_CHACHA20_POLY1305,
     SALT_SIZE,
     KEY_SIZE,
 )
 
+
+# ---------- Test dari Anggota 1 (AES-GCM & key derivation) ----------
 
 def test_encrypt_decrypt_roundtrip():
     """Plaintext hasil dekripsi harus identik dengan plaintext asli (AES-GCM)."""
@@ -94,3 +96,44 @@ def test_derive_key_different_salt_gives_different_key():
     key_b = derive_key("password_sama", os.urandom(SALT_SIZE))
 
     assert key_a != key_b
+
+
+# ---------- Ditambahkan Anggota 2 (ChaCha20-Poly1305 & edge case) ----------
+
+def test_encrypt_decrypt_roundtrip_chacha20():
+    """Roundtrip harus berhasil juga untuk mode ChaCha20-Poly1305."""
+    plaintext = b"Uji ChaCha20-Poly1305 oleh Anggota 2"
+    password = "sandi_chacha_789"
+
+    blob = encrypt(plaintext, password, ALGO_CHACHA20_POLY1305)
+    hasil = decrypt(blob, password)
+
+    assert hasil == plaintext
+
+
+def test_decrypt_wrong_password_fails_chacha20():
+    """Dekripsi ChaCha20 dengan password salah juga harus ditolak."""
+    plaintext = b"Pesan rahasia mode ChaCha20"
+    blob = encrypt(plaintext, "password_benar_2", ALGO_CHACHA20_POLY1305)
+
+    with pytest.raises(DecryptionError):
+        decrypt(blob, "password_salah_2")
+
+
+def test_encrypt_decrypt_empty_plaintext():
+    """Kasus tepi: plaintext kosong (0 byte) tetap harus bisa roundtrip."""
+    blob = encrypt(b"", "password_kosong_test", ALGO_AES_GCM)
+    hasil = decrypt(blob, "password_kosong_test")
+
+    assert hasil == b""
+
+
+def test_encrypt_decrypt_binary_file_like_data():
+    """Roundtrip untuk data biner acak (mensimulasikan file gambar/PDF)."""
+    plaintext = os.urandom(4096)
+    password = "password_biner"
+
+    blob = encrypt(plaintext, password, ALGO_AES_GCM)
+    hasil = decrypt(blob, password)
+
+    assert hasil == plaintext
