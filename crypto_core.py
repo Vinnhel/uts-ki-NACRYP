@@ -7,8 +7,8 @@ Format blob terenkripsi (disimpan sebagai satu berkas .enc):
     [1 byte algo_id] [16 byte salt] [12 byte nonce] [ciphertext+tag ...]
 
 algo_id:
-    0x01 = AES-256-GCM        (Anggota 1 — SELESAI)
-    0x02 = ChaCha20-Poly1305  (Anggota 2 — SELESAI)
+    0x01 = AES-256-GCM        (Anggota 1)
+    0x02 = ChaCha20-Poly1305  (Anggota 2)
 
 Semua nilai acak (salt, nonce) WAJIB dibangkitkan dengan `secrets` /
 `os.urandom`. Key tidak pernah disimpan di disk maupun di source code.
@@ -92,7 +92,6 @@ def encrypt(plaintext: bytes, password: str, algo: int = ALGO_AES_GCM) -> bytes:
     if algo == ALGO_AES_GCM:
         cipher = AESGCM(key)
     else:
-        # --- Ditambahkan Anggota 2 ---
         cipher = ChaCha20Poly1305(key)
 
     # associated_data=None -> tidak ada data tambahan yang diautentikasi.
@@ -134,7 +133,6 @@ def decrypt(blob: bytes, password: str) -> bytes:
     if algo == ALGO_AES_GCM:
         cipher = AESGCM(key)
     else:
-        # --- Ditambahkan Anggota 2 ---
         cipher = ChaCha20Poly1305(key)
 
     try:
@@ -156,8 +154,17 @@ def bit_diff_percentage(data_a: bytes, data_b: bytes) -> float:
 
     Returns:
         float persentase (0-100) bit yang berbeda.
-
-    Dipakai di benchmark.py Hari 5 untuk membandingkan ciphertext saat
-    1 bit plaintext/key diubah.
     """
-    raise NotImplementedError("TODO Anggota 3: implementasikan bit_diff_percentage")
+    if len(data_a) != len(data_b):
+        raise ValueError("data_a dan data_b harus memiliki panjang yang sama")
+
+    total_bits = len(data_a) * 8
+    if total_bits == 0:
+        return 0.0
+
+    diff_bits = 0
+    for byte_a, byte_b in zip(data_a, data_b):
+        xor_result = byte_a ^ byte_b
+        diff_bits += bin(xor_result).count("1")
+
+    return (diff_bits / total_bits) * 100
