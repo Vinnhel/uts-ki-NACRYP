@@ -8,7 +8,7 @@ Format blob terenkripsi (disimpan sebagai satu berkas .enc):
 
 algo_id:
     0x01 = AES-256-GCM        (Anggota 1 — SELESAI)
-    0x02 = ChaCha20-Poly1305  (Anggota 2 — TODO)
+    0x02 = ChaCha20-Poly1305  (Anggota 2 — SELESAI)
 
 Semua nilai acak (salt, nonce) WAJIB dibangkitkan dengan `secrets` /
 `os.urandom`. Key tidak pernah disimpan di disk maupun di source code.
@@ -18,7 +18,7 @@ import secrets
 
 from argon2.low_level import hash_secret_raw, Type
 from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 # --- Konstanta ---
 SALT_SIZE = 16           # byte, untuk key derivation
@@ -77,21 +77,24 @@ def encrypt(plaintext: bytes, password: str, algo: int = ALGO_AES_GCM) -> bytes:
     Args:
         plaintext: data mentah (bytes) yang akan dienkripsi.
         password: password dari pengguna.
-        algo: ALGO_AES_GCM (ChaCha20 akan ditambahkan Anggota 2).
+        algo: ALGO_AES_GCM atau ALGO_CHACHA20_POLY1305.
 
     Returns:
         blob bytes: [1 byte algo_id][salt][nonce][ciphertext+tag]
     """
-    if algo != ALGO_AES_GCM:
-        raise NotImplementedError(
-            "Mode selain AES-GCM belum diimplementasikan (TODO Anggota 2)"
-        )
+    if algo not in (ALGO_AES_GCM, ALGO_CHACHA20_POLY1305):
+        raise ValueError(f"Algoritma tidak dikenal: {algo}")
 
     salt = secrets.token_bytes(SALT_SIZE)
     key = derive_key(password, salt)
     nonce = secrets.token_bytes(NONCE_SIZE)
 
-    cipher = AESGCM(key)
+    if algo == ALGO_AES_GCM:
+        cipher = AESGCM(key)
+    else:
+        # --- Ditambahkan Anggota 2 ---
+        cipher = ChaCha20Poly1305(key)
+
     # associated_data=None -> tidak ada data tambahan yang diautentikasi.
     ciphertext = cipher.encrypt(nonce, plaintext, None)
 
@@ -123,13 +126,16 @@ def decrypt(blob: bytes, password: str) -> bytes:
     nonce = blob[1 + SALT_SIZE:1 + SALT_SIZE + NONCE_SIZE]
     ciphertext = blob[1 + SALT_SIZE + NONCE_SIZE:]
 
-    if algo != ALGO_AES_GCM:
-        raise NotImplementedError(
-            "Mode selain AES-GCM belum diimplementasikan (TODO Anggota 2)"
-        )
+    if algo not in (ALGO_AES_GCM, ALGO_CHACHA20_POLY1305):
+        raise DecryptionError("Berkas tidak valid atau rusak.")
 
     key = derive_key(password, salt)
-    cipher = AESGCM(key)
+
+    if algo == ALGO_AES_GCM:
+        cipher = AESGCM(key)
+    else:
+        # --- Ditambahkan Anggota 2 ---
+        cipher = ChaCha20Poly1305(key)
 
     try:
         plaintext = cipher.decrypt(nonce, ciphertext, None)
