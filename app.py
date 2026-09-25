@@ -2,8 +2,9 @@
 app.py
 Antarmuka Streamlit untuk NACRYP — Brankas File Pribadi Terenkripsi.
 
-Tahap 2 (Anggota 2): melengkapi Tab Decrypt, melanjutkan dari
-Tab Encrypt yang sudah dibuat Anggota 1.
+Tahap 3 (Anggota 3): menambahkan sidebar info, panduan pemakaian, dan
+footer, melengkapi Tab Encrypt (Anggota 1) dan Tab Decrypt (Anggota 2).
+Versi ini SUDAH LENGKAP (final).
 """
 
 import base64
@@ -19,8 +20,39 @@ from crypto_core import (
 )
 
 st.set_page_config(page_title="NACRYP", page_icon="🔒")
+
+# --- Ditambahkan Anggota 3: sidebar info aplikasi ---
+with st.sidebar:
+    st.header("ℹ️ Tentang NACRYP")
+    st.markdown(
+        "Aplikasi untuk mengenkripsi & mendekripsi berkas pribadi "
+        "menggunakan algoritma kriptografi modern."
+    )
+    st.markdown("**Algoritma yang didukung:**")
+    st.markdown("- AES-256-GCM\n- ChaCha20-Poly1305")
+    st.markdown("**Keamanan:**")
+    st.markdown(
+        "- Kunci diturunkan dari password (Argon2id)\n"
+        "- Salt & nonce acak setiap enkripsi\n"
+        "- Dekripsi ditolak jika password salah atau "
+        "berkas telah diubah"
+    )
+    st.caption("Tugas Proyek Kriptografi — Keamanan Informasi, Unsil")
+
 st.title("🔒 NACRYP")
 st.caption("Brankas File Pribadi Terenkripsi — AES-256-GCM / ChaCha20-Poly1305")
+
+# --- Ditambahkan Anggota 3: panduan singkat cara pakai ---
+with st.expander("📖 Cara Pakai"):
+    st.markdown(
+        "1. Buka tab **Encrypt**, unggah berkas, masukkan password, "
+        "lalu klik **Enkripsi**.\n"
+        "2. Unduh berkas hasil (`.enc`).\n"
+        "3. Buka tab **Decrypt**, unggah berkas `.enc`, masukkan "
+        "password yang sama, klik **Dekripsi**.\n"
+        "4. Jika password salah atau berkas diubah, dekripsi akan "
+        "ditolak secara otomatis."
+    )
 
 tab_enc, tab_dec = st.tabs(["🔐 Encrypt", "🔓 Decrypt"])
 
@@ -67,7 +99,7 @@ with tab_enc:
                 st.error(f"Enkripsi gagal: {e}")
 
 # ============================== TAB DECRYPT ==============================
-# Diimplementasikan oleh Anggota 2
+# Dibuat oleh Anggota 2
 with tab_dec:
     st.subheader("Dekripsi Berkas")
 
@@ -94,8 +126,13 @@ with tab_dec:
                     file_name=original_name,
                 )
             except DecryptionError:
-                # Pesan sengaja generik: tidak membedakan "password salah"
-                # vs "berkas telah diubah" (menghindari oracle attack).
                 st.error("Password salah atau berkas telah diubah.")
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat dekripsi: {e}")
+
+# --- Ditambahkan Anggota 3: footer ---
+st.divider()
+st.caption(
+    "NACRYP — Tugas Proyek Aplikasi Kriptografi, Keamanan Informasi, "
+    "Universitas Siliwangi."
+)
