@@ -1,10 +1,6 @@
 """
 app.py
 Antarmuka Streamlit untuk NACRYP — Brankas File Pribadi Terenkripsi.
-
-Tahap 3 (Anggota 3): menambahkan sidebar info, panduan pemakaian, dan
-footer, melengkapi Tab Encrypt (Anggota 1) dan Tab Decrypt (Anggota 2).
-Versi ini SUDAH LENGKAP (final).
 """
 
 import base64
@@ -20,44 +16,12 @@ from crypto_core import (
 )
 
 st.set_page_config(page_title="NACRYP", page_icon="🔒")
-
-# --- Ditambahkan Anggota 3: sidebar info aplikasi ---
-with st.sidebar:
-    st.header("ℹ️ Tentang NACRYP")
-    st.markdown(
-        "Aplikasi untuk mengenkripsi & mendekripsi berkas pribadi "
-        "menggunakan algoritma kriptografi modern."
-    )
-    st.markdown("**Algoritma yang didukung:**")
-    st.markdown("- AES-256-GCM\n- ChaCha20-Poly1305")
-    st.markdown("**Keamanan:**")
-    st.markdown(
-        "- Kunci diturunkan dari password (Argon2id)\n"
-        "- Salt & nonce acak setiap enkripsi\n"
-        "- Dekripsi ditolak jika password salah atau "
-        "berkas telah diubah"
-    )
-    st.caption("Tugas Proyek Kriptografi — Keamanan Informasi, Unsil")
-
 st.title("🔒 NACRYP")
 st.caption("Brankas File Pribadi Terenkripsi — AES-256-GCM / ChaCha20-Poly1305")
-
-# --- Ditambahkan Anggota 3: panduan singkat cara pakai ---
-with st.expander("📖 Cara Pakai"):
-    st.markdown(
-        "1. Buka tab **Encrypt**, unggah berkas, masukkan password, "
-        "lalu klik **Enkripsi**.\n"
-        "2. Unduh berkas hasil (`.enc`).\n"
-        "3. Buka tab **Decrypt**, unggah berkas `.enc`, masukkan "
-        "password yang sama, klik **Dekripsi**.\n"
-        "4. Jika password salah atau berkas diubah, dekripsi akan "
-        "ditolak secara otomatis."
-    )
 
 tab_enc, tab_dec = st.tabs(["🔐 Encrypt", "🔓 Decrypt"])
 
 # ============================== TAB ENCRYPT ==============================
-# Dibuat oleh Anggota 1
 with tab_enc:
     st.subheader("Enkripsi Berkas")
 
@@ -86,8 +50,18 @@ with tab_enc:
                     f"ukuran terenkripsi: {len(blob)} byte."
                 )
 
+                # --- Wajib: tampilkan ciphertext dalam Base64 ---
                 b64 = base64.b64encode(blob).decode()
-                st.text_area("Ciphertext (Base64)", b64, height=150)
+                MAX_PREVIEW_CHARS = 5000  # ~3.6 KB data asli
+                if len(b64) > MAX_PREVIEW_CHARS:
+                    preview = (
+                        b64[:MAX_PREVIEW_CHARS]
+                        + f"\n\n... (dipotong, total {len(b64):,} karakter. "
+                        + "Unduh file di bawah untuk mendapatkan Base64 lengkap)"
+                    )
+                    st.text_area("Ciphertext (Base64) — pratinjau", preview, height=150)
+                else:
+                    st.text_area("Ciphertext (Base64)", b64, height=150)
 
                 st.download_button(
                     "Unduh berkas terenkripsi (.enc)",
@@ -99,7 +73,6 @@ with tab_enc:
                 st.error(f"Enkripsi gagal: {e}")
 
 # ============================== TAB DECRYPT ==============================
-# Dibuat oleh Anggota 2
 with tab_dec:
     st.subheader("Dekripsi Berkas")
 
@@ -126,11 +99,13 @@ with tab_dec:
                     file_name=original_name,
                 )
             except DecryptionError:
+                # Pesan sengaja generik: tidak membedakan "password salah"
+                # vs "berkas telah diubah" (menghindari oracle attack),
+                # sekaligus memenuhi ketentuan wajib fitur Topik A.
                 st.error("Password salah atau berkas telah diubah.")
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat dekripsi: {e}")
 
-# --- Ditambahkan Anggota 3: footer ---
 st.divider()
 st.caption(
     "NACRYP — Tugas Proyek Aplikasi Kriptografi, Keamanan Informasi, "

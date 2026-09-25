@@ -1,0 +1,9 @@
+[server]
+# Menaikkan batas ukuran pesan WebSocket (default 25 MB) supaya file
+# besar (misal gambar 10-20 MB) tidak gagal saat ditampilkan/diunduh.
+# Nilai dalam MB.
+maxMessageSize = 250
+
+# Batas maksimum ukuran file yang bisa diupload lewat st.file_uploader
+# (default 200 MB, dinaikkan sedikit untuk jaga-jaga).
+maxUploadSize = 250
