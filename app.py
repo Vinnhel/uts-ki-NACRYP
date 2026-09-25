@@ -2,8 +2,8 @@
 app.py
 Antarmuka Streamlit untuk NACRYP — Brankas File Pribadi Terenkripsi.
 
-Tahap 1 (Anggota 1): setup halaman dan Tab Encrypt (AES-256-GCM/ChaCha20).
-Tab Decrypt akan diimplementasikan Anggota 2.
+Tahap 2 (Anggota 2): melengkapi Tab Decrypt, melanjutkan dari
+Tab Encrypt yang sudah dibuat Anggota 1.
 """
 
 import base64
@@ -25,7 +25,7 @@ st.caption("Brankas File Pribadi Terenkripsi — AES-256-GCM / ChaCha20-Poly1305
 tab_enc, tab_dec = st.tabs(["🔐 Encrypt", "🔓 Decrypt"])
 
 # ============================== TAB ENCRYPT ==============================
-# Diimplementasikan oleh Anggota 1
+# Dibuat oleh Anggota 1
 with tab_enc:
     st.subheader("Enkripsi Berkas")
 
@@ -54,7 +54,6 @@ with tab_enc:
                     f"ukuran terenkripsi: {len(blob)} byte."
                 )
 
-                # --- Wajib: tampilkan ciphertext dalam Base64 ---
                 b64 = base64.b64encode(blob).decode()
                 st.text_area("Ciphertext (Base64)", b64, height=150)
 
@@ -68,7 +67,35 @@ with tab_enc:
                 st.error(f"Enkripsi gagal: {e}")
 
 # ============================== TAB DECRYPT ==============================
-# TODO (Anggota 2): implementasikan alur dekripsi lengkap
+# Diimplementasikan oleh Anggota 2
 with tab_dec:
     st.subheader("Dekripsi Berkas")
-    st.info("TODO Anggota 2: implementasikan tab decrypt")
+
+    uploaded_enc = st.file_uploader("Pilih berkas .enc", key="dec_file")
+    password_dec = st.text_input("Password", type="password", key="dec_pw")
+
+    if st.button("Dekripsi", type="primary"):
+        if not uploaded_enc or not password_dec:
+            st.error("Unggah berkas .enc dan masukkan password terlebih dahulu.")
+        else:
+            try:
+                blob = uploaded_enc.getvalue()
+                plaintext = decrypt(blob, password_dec)
+
+                st.success("Dekripsi berhasil! Berkas asli telah dipulihkan.")
+
+                original_name = uploaded_enc.name
+                if original_name.endswith(".enc"):
+                    original_name = original_name[:-4]
+
+                st.download_button(
+                    "Unduh berkas asli",
+                    data=plaintext,
+                    file_name=original_name,
+                )
+            except DecryptionError:
+                # Pesan sengaja generik: tidak membedakan "password salah"
+                # vs "berkas telah diubah" (menghindari oracle attack).
+                st.error("Password salah atau berkas telah diubah.")
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat dekripsi: {e}")
