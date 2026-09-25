@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 .env
 *.enc
-sample_files/
-hasil_pengujian.xlsx
 .streamlit/secrets.toml
 .DS_Store
+
+# Catatan: sample_files/ dan hasil_pengujian.xlsx SENGAJA tidak di-ignore
+# supaya ikut ter-commit sebagai bukti data pengujian (Bagian 5 dokumen
+# tugas: "Data pengujian: Berkas uji (citra, dokumen, hasil serangan)
+# dan tabel hasil dalam format excel XLSX").
