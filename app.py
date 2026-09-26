@@ -24,12 +24,171 @@ from hybrid_encrypt import (
     public_key_from_pem_bytes,
 )
 
-st.set_page_config(page_title="NACRYP", page_icon="🔒")
-st.title("🔒 NACRYP")
-st.caption("Brankas File Pribadi Terenkripsi — AES-256-GCM / ChaCha20-Poly1305")
+st.set_page_config(page_title="NACRYP", page_icon="🔒", layout="centered")
+
+# =====================================================================
+# TEMA VISUAL — "Vault / Cipher Terminal"
+# Dirancang dari subjek aplikasi: brankas kriptografi. Aksen kuningan
+# (brass) merepresentasikan gagang/kunci brankas; monospace dipakai
+# genuinely untuk data hex/base64, bukan sekadar dekorasi.
+# =====================================================================
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+    --nc-bg: #0F1115;
+    --nc-panel: #171A21;
+    --nc-panel-border: #2A2E38;
+    --nc-brass: #C9A227;
+    --nc-brass-dim: #8A7220;
+    --nc-steel: #4C7EA8;
+    --nc-text: #E7E4DD;
+    --nc-text-dim: #9AA0AC;
+    --nc-danger: #C1503D;
+    --nc-success: #5B8C5A;
+}
+
+html, body, .stApp, .main, [data-testid="stAppViewContainer"] {
+    background: var(--nc-bg) !important;
+    color: var(--nc-text) !important;
+}
+
+[data-testid="stHeader"] {
+    background: var(--nc-bg) !important;
+}
+
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+.stMarkdown, .stCaption, label {
+    color: var(--nc-text) !important;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: var(--nc-text) !important;
+    letter-spacing: -0.01em;
+}
+
+p, span, label, div {
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* --- Hero header --- */
+.nc-hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--nc-panel-border);
+}
+.nc-hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.9rem;
+    color: var(--nc-text);
+    margin: 0;
+    line-height: 1;
+}
+.nc-hero-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--nc-text-dim);
+    margin-top: 4px;
+}
+
+/* --- Tabs: segmented control, brass underline on active --- */
+button[data-baseweb="tab"] {
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: var(--nc-text-dim) !important;
+    font-weight: 600;
+}
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--nc-brass) !important;
+}
+div[data-baseweb="tab-highlight"] {
+    background-color: var(--nc-brass) !important;
+    height: 2px !important;
+}
+div[data-baseweb="tab-border"] {
+    background-color: var(--nc-panel-border) !important;
+}
+
+/* --- Buttons --- */
+.stButton > button, .stDownloadButton > button {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    border-radius: 3px;
+    border: 1px solid var(--nc-brass);
+}
+.stButton > button[kind="primary"] {
+    background: var(--nc-brass);
+    color: #14161B;
+}
+.stButton > button[kind="primary"]:hover {
+    background: var(--nc-brass-dim);
+    border-color: var(--nc-brass-dim);
+}
+.stDownloadButton > button {
+    background: transparent;
+    color: var(--nc-brass);
+}
+.stDownloadButton > button:hover {
+    background: rgba(201, 162, 39, 0.1);
+}
+
+/* --- Inputs & uploader --- */
+.stTextInput input, .stTextArea textarea {
+    background: var(--nc-panel) !important;
+    border: 1px solid var(--nc-panel-border) !important;
+    color: var(--nc-text) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.85rem !important;
+}
+[data-testid="stFileUploaderDropzone"] {
+    background: var(--nc-panel) !important;
+    border: 1px dashed var(--nc-panel-border) !important;
+}
+
+/* --- Alerts: recolor to match palette (no default red/green) --- */
+[data-testid="stAlertContentSuccess"] { color: var(--nc-success) !important; }
+[data-testid="stAlertContentError"] { color: var(--nc-danger) !important; }
+div[data-testid="stNotification"] {
+    background: var(--nc-panel) !important;
+    border: 1px solid var(--nc-panel-border) !important;
+    border-left: 3px solid var(--nc-brass) !important;
+}
+
+/* --- Sidebar --- */
+section[data-testid="stSidebar"] {
+    background: var(--nc-panel);
+    border-right: 1px solid var(--nc-panel-border);
+}
+
+hr { border-color: var(--nc-panel-border) !important; }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="nc-hero">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <circle cx="17" cy="17" r="15" stroke="#C9A227" stroke-width="1.5"/>
+        <circle cx="17" cy="17" r="4" fill="#C9A227"/>
+        <line x1="17" y1="2" x2="17" y2="7" stroke="#C9A227" stroke-width="1.5"/>
+        <line x1="17" y1="27" x2="17" y2="32" stroke="#C9A227" stroke-width="1.5"/>
+        <line x1="2" y1="17" x2="7" y2="17" stroke="#C9A227" stroke-width="1.5"/>
+        <line x1="27" y1="17" x2="32" y2="17" stroke="#C9A227" stroke-width="1.5"/>
+    </svg>
+    <div>
+        <p class="nc-hero-title">NACRYP</p>
+        <p class="nc-hero-tagline">enkripsi berkas dengan AES-256-GCM atau ChaCha20-Poly1305</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 tab_enc, tab_dec, tab_hybrid = st.tabs(
-    ["🔐 Encrypt", "🔓 Decrypt", "🤝 Hybrid (RSA-OAEP)"]
+    ["Encrypt", "Decrypt", "Hybrid (RSA-OAEP)"]
 )
 
 # ============================== TAB ENCRYPT ==============================
@@ -120,15 +279,15 @@ with tab_dec:
 # ============================== TAB HYBRID ================================
 # Fitur pengayaan (Anggota 2: hybrid_encrypt.py, Anggota 3: UI ini)
 with tab_hybrid:
-    st.subheader("🤝 Enkripsi Hibrida (RSA-OAEP + AES-256-GCM)")
+    st.subheader("Enkripsi Hibrida (RSA-OAEP + AES-256-GCM)")
     st.caption(
-        "Fitur pengayaan: tidak perlu berbagi password. Pengirim cukup "
+        "Tidak perlu berbagi password. Pengirim cukup "
         "punya kunci PUBLIK penerima; hanya kunci PRIVAT penerima yang "
         "bisa membuka data."
     )
 
     sub_keygen, sub_enc, sub_dec = st.tabs(
-        ["1️⃣ Buat Kunci", "2️⃣ Enkripsi", "3️⃣ Dekripsi"]
+        ["Buat Kunci", "Enkripsi", "Dekripsi"]
     )
 
     # --- Sub-tab: Buat Pasangan Kunci ---
@@ -165,14 +324,14 @@ with tab_hybrid:
             col1, col2 = st.columns(2)
             with col1:
                 st.download_button(
-                    "⬇️ Unduh Kunci Publik (bagikan)",
+                    "Unduh Kunci Publik (bagikan)",
                     data=st.session_state["hy_pub_pem"],
                     file_name="public_key.pem",
                     key="dl_pub",
                 )
             with col2:
                 st.download_button(
-                    "⬇️ Unduh Kunci Privat (rahasiakan!)",
+                    "Unduh Kunci Privat (rahasiakan)",
                     data=st.session_state["hy_priv_pem"],
                     file_name="private_key.pem",
                     key="dl_priv",
@@ -253,8 +412,14 @@ with tab_hybrid:
                 except Exception as e:
                     st.error(f"Terjadi kesalahan: kunci privat/passphrase salah, atau berkas rusak.")
 
-st.divider()
-st.caption(
-    "NACRYP — Tugas Proyek Aplikasi Kriptografi, Keamanan Informasi, "
-    "Universitas Siliwangi."
+st.markdown(
+    """
+    <hr style="margin-top: 2rem;">
+    <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+              color: #9AA0AC;">
+        NACRYP — Tugas Proyek Aplikasi Kriptografi, Keamanan Informasi,
+        Universitas Siliwangi.
+    </p>
+    """,
+    unsafe_allow_html=True,
 )
