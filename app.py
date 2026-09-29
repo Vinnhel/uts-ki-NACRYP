@@ -182,7 +182,7 @@ st.markdown("""
     </svg>
     <div>
         <p class="nc-hero-title">NACRYP</p>
-        <p class="nc-hero-tagline">enkripsi berkas dengan AES-256-GCM atau ChaCha20-Poly1305</p>
+        <p class="nc-hero-tagline">enkripsi teks & berkas dengan AES-256-GCM atau ChaCha20-Poly1305</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -193,20 +193,39 @@ tab_enc, tab_dec, tab_hybrid = st.tabs(
 
 # ============================== TAB ENCRYPT ==============================
 with tab_enc:
-    st.subheader("Enkripsi Berkas")
+    st.subheader("Enkripsi Teks atau Berkas")
 
-    uploaded = st.file_uploader("Pilih berkas untuk dienkripsi", key="enc_file")
+    jenis_input = st.radio(
+        "Jenis Masukan", ["Berkas", "Teks"], horizontal=True, key="enc_jenis"
+    )
+
+    if jenis_input == "Berkas":
+        uploaded = st.file_uploader("Pilih berkas untuk dienkripsi", key="enc_file")
+        teks_input = None
+    else:
+        teks_input = st.text_area(
+            "Ketik atau tempel teks yang ingin dienkripsi", key="enc_teks", height=120
+        )
+        uploaded = None
+
     password = st.text_input("Password", type="password", key="enc_pw")
     algo_choice = st.radio(
         "Algoritma", ["AES-256-GCM", "ChaCha20-Poly1305"], horizontal=True
     )
 
     if st.button("Enkripsi", type="primary"):
-        if not uploaded or not password:
-            st.error("Unggah berkas dan masukkan password terlebih dahulu.")
+        ada_masukan = uploaded is not None or (teks_input is not None and teks_input.strip())
+        if not ada_masukan or not password:
+            st.error("Isi teks atau unggah berkas, dan masukkan password terlebih dahulu.")
         else:
             try:
-                plaintext = uploaded.getvalue()
+                if jenis_input == "Berkas":
+                    plaintext = uploaded.getvalue()
+                    nama_unduh = uploaded.name + ".enc"
+                else:
+                    plaintext = teks_input.encode("utf-8")
+                    nama_unduh = "pesan.txt.enc"
+
                 algo = (
                     ALGO_AES_GCM
                     if algo_choice == "AES-256-GCM"
@@ -236,7 +255,7 @@ with tab_enc:
                 st.download_button(
                     "Unduh berkas terenkripsi (.enc)",
                     data=blob,
-                    file_name=uploaded.name + ".enc",
+                    file_name=nama_unduh,
                     mime="application/octet-stream",
                 )
             except Exception as e:
@@ -244,7 +263,7 @@ with tab_enc:
 
 # ============================== TAB DECRYPT ==============================
 with tab_dec:
-    st.subheader("Dekripsi Berkas")
+    st.subheader("Dekripsi Teks atau Berkas")
 
     uploaded_enc = st.file_uploader("Pilih berkas .enc", key="dec_file")
     password_dec = st.text_input("Password", type="password", key="dec_pw")
@@ -257,14 +276,25 @@ with tab_dec:
                 blob = uploaded_enc.getvalue()
                 plaintext = decrypt(blob, password_dec)
 
-                st.success("Dekripsi berhasil! Berkas asli telah dipulihkan.")
+                st.success("Dekripsi berhasil! Data asli telah dipulihkan.")
 
                 original_name = uploaded_enc.name
                 if original_name.endswith(".enc"):
                     original_name = original_name[:-4]
 
+                # Coba tampilkan sebagai teks langsung kalau memang berupa
+                # teks UTF-8 valid (misal hasil enkripsi dari mode "Teks"
+                # di tab Encrypt). Kalau bukan teks (berkas biner seperti
+                # gambar/PDF), decode akan gagal dan cukup tampilkan
+                # tombol download saja.
+                try:
+                    teks_hasil = plaintext.decode("utf-8")
+                    st.text_area("Isi teks hasil dekripsi", teks_hasil, height=120)
+                except UnicodeDecodeError:
+                    pass  # bukan teks biasa, tidak apa-apa — berkas biner
+
                 st.download_button(
-                    "Unduh berkas asli",
+                    "Unduh hasil dekripsi",
                     data=plaintext,
                     file_name=original_name,
                 )
@@ -281,7 +311,7 @@ with tab_dec:
 with tab_hybrid:
     st.subheader("Enkripsi Hibrida (RSA-OAEP + AES-256-GCM)")
     st.caption(
-        "Tidak perlu berbagi password. Pengirim cukup "
+        "Fitur pengayaan: tidak perlu berbagi password. Pengirim cukup "
         "punya kunci PUBLIK penerima; hanya kunci PRIVAT penerima yang "
         "bisa membuka data."
     )
