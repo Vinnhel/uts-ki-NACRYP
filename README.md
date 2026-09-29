@@ -5,6 +5,11 @@ menggunakan algoritma kriptografi modern (AES-256-GCM / ChaCha20-Poly1305).
 Dibuat untuk Tugas Proyek Aplikasi Kriptografi - Mata Kuliah Keamanan
 Informasi, Program Studi Informatika, Universitas Siliwangi.
 
+# Anggota Kelompok
+Naila Salsabila - 247006111004
+Arum Rizky Ramadhani - 247006111016
+Christine Angelica Soeharyanto - 247006111025
+
 ## Deskripsi
 Aplikasi memungkinkan pengguna mengenkripsi berkas apa pun (dokumen, gambar,
 PDF, dll.) menggunakan kata sandi. Kunci enkripsi diturunkan dari kata sandi
