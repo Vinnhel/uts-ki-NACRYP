@@ -1,25 +1,3 @@
-"""
-hybrid_encrypt.py
-Fitur pengayaan NACRYP: Enkripsi Hibrida (RSA-OAEP + AES-256-GCM).
-
-Konsep:
-  - Setiap enkripsi membuat SESSION KEY AES-256 acak yang baru.
-  - Session key ini dibungkus (di-enkripsi) memakai kunci PUBLIK RSA
-    penerima (RSA-OAEP), bukan diturunkan dari password.
-  - Data sesungguhnya dienkripsi dengan AES-256-GCM memakai session key.
-  - Untuk dekripsi, penerima memakai kunci PRIVAT RSA miliknya untuk
-    membuka session key, lalu memakai session key itu untuk dekripsi data.
-
-Keuntungan dibanding mode password biasa:
-  - Pengirim tidak perlu tahu/berbagi password rahasia dengan penerima.
-  - Pengirim cukup punya kunci PUBLIK penerima (boleh disebar bebas).
-  - Hanya pemilik kunci PRIVAT yang bisa membuka data.
-
-Format blob hibrida:
-  [2 byte panjang session_key terenkripsi][session_key terenkripsi RSA]
-  [12 byte nonce AES][ciphertext+tag AES-GCM]
-"""
-
 import os
 import struct
 

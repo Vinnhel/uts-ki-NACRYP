@@ -1,11 +1,7 @@
 """
 Unit test untuk crypto_core.py.
-Minimal 5 test sesuai ketentuan tugas (Bagian 4).
 Jalankan dari root folder project: pytest tests/ -v
 
-Tahap 3 (Anggota 3): menambahkan test untuk bit_diff_percentage
-(avalanche effect) dan validasi error, melengkapi test dari
-Anggota 1 dan Anggota 2. Versi ini SUDAH LENGKAP (final).
 """
 
 import sys
@@ -28,7 +24,7 @@ from crypto_core import (
 )
 
 
-# ---------- Test wajib (minimal 5, sesuai Bagian 4 dokumen tugas) ----------
+# ---------- Test wajib  ----------
 
 def test_encrypt_decrypt_roundtrip():
     """Plaintext hasil dekripsi harus identik dengan plaintext asli (AES-GCM)."""
@@ -93,7 +89,7 @@ def test_derive_key_deterministic_given_same_salt():
     assert key_a == key_b
 
 
-# ---------- Test tambahan (cakupan lebih luas, tidak wajib tapi menguatkan) ----------
+# ---------- Test tambahan  ----------
 
 def test_encrypt_decrypt_roundtrip_chacha20():
     """Roundtrip harus berhasil juga untuk mode ChaCha20-Poly1305."""

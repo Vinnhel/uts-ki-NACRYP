@@ -1,19 +1,3 @@
-"""
-crypto_core.py
-Modul inti kriptografi untuk NACRYP — Brankas File Pribadi Terenkripsi.
-
-Format blob terenkripsi (disimpan sebagai satu berkas .enc):
-
-    [1 byte algo_id] [16 byte salt] [12 byte nonce] [ciphertext+tag ...]
-
-algo_id:
-    0x01 = AES-256-GCM        (Anggota 1)
-    0x02 = ChaCha20-Poly1305  (Anggota 2)
-
-Semua nilai acak (salt, nonce) WAJIB dibangkitkan dengan `secrets` /
-`os.urandom`. Key tidak pernah disimpan di disk maupun di source code.
-"""
-
 import secrets
 
 from argon2.low_level import hash_secret_raw, Type
@@ -28,8 +12,6 @@ KEY_SIZE = 32            # byte, AES-256 / ChaCha20 key = 256 bit
 ALGO_AES_GCM = 0x01
 ALGO_CHACHA20_POLY1305 = 0x02
 
-# Parameter Argon2id — cukup kuat untuk tugas ini, tidak terlalu lambat
-# untuk didemokan (waktu derive key sekitar puluhan-ratusan ms).
 _ARGON2_TIME_COST = 3
 _ARGON2_MEMORY_COST = 64 * 1024   # 64 MB
 _ARGON2_PARALLELISM = 2

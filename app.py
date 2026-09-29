@@ -1,8 +1,3 @@
-"""
-app.py
-Antarmuka Streamlit untuk NACRYP — Brankas File Pribadi Terenkripsi.
-"""
-
 import base64
 
 import streamlit as st
@@ -27,11 +22,7 @@ from hybrid_encrypt import (
 st.set_page_config(page_title="NACRYP", page_icon="🔒", layout="centered")
 
 # =====================================================================
-# TEMA VISUAL — "Vault / Cipher Terminal"
-# Dirancang dari subjek aplikasi: brankas kriptografi. Aksen kuningan
-# (brass) merepresentasikan gagang/kunci brankas; monospace dipakai
-# genuinely untuk data hex/base64, bukan sekadar dekorasi.
-# =====================================================================
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -307,11 +298,11 @@ with tab_dec:
                 st.error(f"Terjadi kesalahan saat dekripsi: {e}")
 
 # ============================== TAB HYBRID ================================
-# Fitur pengayaan (Anggota 2: hybrid_encrypt.py, Anggota 3: UI ini)
+# Fitur pengayaan 
 with tab_hybrid:
     st.subheader("Enkripsi Hibrida (RSA-OAEP + AES-256-GCM)")
     st.caption(
-        "Fitur pengayaan: tidak perlu berbagi password. Pengirim cukup "
+        "Tidak perlu berbagi password. Pengirim cukup "
         "punya kunci PUBLIK penerima; hanya kunci PRIVAT penerima yang "
         "bisa membuka data."
     )

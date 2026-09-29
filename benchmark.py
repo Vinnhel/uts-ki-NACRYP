@@ -1,22 +1,3 @@
-"""
-benchmark.py
-Script pengujian wajib untuk NACRYP sesuai ketentuan tugas (Bagian 3, Topik A):
-
-  1. Kebenaran dekripsi pada minimal 10 masukan berbeda (termasuk gambar & PDF)
-  2. Waktu enkripsi/dekripsi untuk berkas 1 KB, 1 MB, 10 MB
-  3. Avalanche effect
-  4. Entropi & histogram byte ciphertext vs plaintext
-  5. Perbandingan AES-256-GCM vs ChaCha20-Poly1305
-
-Tahap 3 (Anggota 3): menambahkan uji avalanche effect, entropi,
-histogram, dan ekspor ke Excel, melengkapi uji korektnes (Anggota 1)
-dan uji waktu/perbandingan (Anggota 2). Versi ini SUDAH LENGKAP (final).
-
-Jalankan: python benchmark.py
-Hasil dicetak ke terminal DAN diekspor ke hasil_pengujian.xlsx
-Grafik histogram disimpan sebagai histogram_perbandingan.png
-"""
-
 import math
 import os
 import time
@@ -24,7 +5,7 @@ from collections import Counter
 
 import pandas as pd
 import matplotlib
-matplotlib.use("Agg")  # supaya bisa jalan tanpa GUI/display
+matplotlib.use("Agg")  
 import matplotlib.pyplot as plt
 
 from crypto_core import (
@@ -35,12 +16,12 @@ from crypto_core import (
     ALGO_CHACHA20_POLY1305,
 )
 
-SAMPLE_DIR = "sample_files"   # taruh file uji nyata (gambar, PDF) di sini
+SAMPLE_DIR = "sample_files"   
 PASSWORD = "BenchmarkPassword123!"
 
 
 # =====================================================================
-# BAGIAN 1 (Anggota 1): UJI KOREKTNES — minimal 10 masukan berbeda
+#  UJI KOREKTNES 
 # =====================================================================
 
 def _generate_synthetic_test_data():
@@ -114,7 +95,7 @@ def test_korektnes(algo=ALGO_AES_GCM):
 
 
 # =====================================================================
-# BAGIAN 2 (Anggota 2): UJI WAKTU + PERBANDINGAN ALGORITMA
+#  UJI WAKTU + PERBANDINGAN ALGORITMA
 # =====================================================================
 
 def test_waktu(sizes_kb=(1, 1024, 10240), algo=ALGO_AES_GCM):
@@ -174,7 +155,7 @@ def compare_algorithms(sizes_kb=(1, 1024, 10240)):
 
 
 # =====================================================================
-# BAGIAN 3 (Anggota 3): AVALANCHE, ENTROPI, HISTOGRAM, EXPORT EXCEL
+#  AVALANCHE, ENTROPI, HISTOGRAM, EXPORT EXCEL
 # =====================================================================
 
 def test_avalanche(n_percobaan=10, algo=ALGO_AES_GCM):
@@ -289,7 +270,7 @@ def export_ke_excel(
 
 
 # =====================================================================
-# MAIN — menjalankan seluruh rangkaian pengujian wajib
+# MAIN 
 # =====================================================================
 
 def main():
